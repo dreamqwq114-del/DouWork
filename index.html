@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>收工台</title>
+<style>
+  :root{
+    --bg:#f4f6f3; --card:#ffffff; --ink:#22302b; --muted:#68776f; --line:#dfe4dc;
+    --accent:#2b6a57; --accent-dark:#235847; --warn:#a33a2a; --warn-bg:#faf0ec;
+    --soft:#eef3ef;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important;}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.65 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:6px;padding:4px 10px;color:var(--ink)}
+  button:hover{border-color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button.primary:hover{background:var(--accent-dark)}
+  input,textarea{font:inherit;border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:#fff;color:var(--ink)}
+  input:focus,textarea:focus{outline:2px solid var(--soft);border-color:var(--accent)}
+  header.top{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;padding:10px 18px;background:var(--card);border-bottom:1px solid var(--line)}
+  .brand{font-size:20px;margin:0 12px 0 0;letter-spacing:2px;color:var(--accent-dark)}
+  .counts{font-size:13px;color:var(--muted)}
+  .counts b{color:var(--ink);font-size:15px}
+  .src-label{font-size:12px;color:var(--muted)}
+  .top .actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .ai-note{padding:6px 18px;background:var(--soft);color:var(--accent-dark);font-size:12.5px;border-bottom:1px solid var(--line)}
+  .demo-banner{padding:8px 18px;background:var(--warn-bg);color:var(--warn);font-weight:700;font-size:13.5px;border-bottom:1px solid var(--line)}
+  .notice-bar{padding:8px 18px;background:#fff8e6;color:#7a5b00;font-size:13px;border-bottom:1px solid var(--line)}
+  main{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:12px;padding:12px 18px;align-items:start}
+  @media (max-width:1100px){ main{grid-template-columns:1fr} }
+  section.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  section.panel h2{margin:0 0 8px;font-size:16px;color:var(--accent-dark)}
+  section.panel h3{margin:14px 0 6px;font-size:13.5px;color:var(--muted);font-weight:700}
+  .empty{color:var(--muted);font-size:13px;padding:10px;border:1px dashed var(--line);border-radius:8px}
+  .prio-card{display:flex;gap:10px;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:10px;margin-bottom:8px;background:#fcfdfc}
+  .prio-num{flex:0 0 26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .task-title{font-weight:700}
+  .task-meta{font-size:12.5px;color:var(--muted);margin:2px 0}
+  .reason{font-size:12.5px;color:var(--accent-dark);background:var(--soft);border-radius:6px;padding:5px 8px;margin-top:5px}
+  .task-ctl{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+  .status-seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .status-seg button{border:0;border-radius:0;padding:3px 9px;background:#fff;color:var(--muted)}
+  .status-seg button.on{background:var(--accent);color:#fff}
+  .blocked-item,.pend-item{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:#fcfdfc}
+  .blocked-item{border-left:4px solid var(--warn)}
+  .pend-item{border-left:4px solid #c9a227;background:#fffdf5}
+  .warn-text{color:var(--warn);font-size:12.5px}
+  .srcbox{margin-top:6px;border-top:1px dashed var(--line);padding-top:6px}
+  .quote{font-size:12.5px;color:var(--muted)}
+  pre.rawtext{margin:6px 0 0;white-space:pre-wrap;background:var(--soft);border-radius:6px;padding:8px;font-size:12.5px;font-family:inherit}
+  .edit-box{margin-top:6px;border:1px dashed var(--line);border-radius:6px;padding:8px;display:flex;flex-direction:column;gap:6px}
+  .source{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:10px}
+  .source-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .confirm-lab{font-size:12.5px;color:var(--accent-dark);display:inline-flex;gap:4px;align-items:center}
+  .suggest-tag{display:inline-block;font-size:11.5px;background:#c9a227;color:#fff;border-radius:4px;padding:1px 6px;margin-left:6px}
+  #report-box pre{white-space:pre-wrap;background:#fcfdfc;border:1px solid var(--line);border-radius:8px;padding:10px;font-size:13px;font-family:inherit}
+  .dirty-banner{background:var(--warn-bg);color:var(--warn);border:1px solid var(--warn);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:13px;font-weight:700}
+  textarea.plan{width:100%;min-height:54px;margin-top:6px}
+  footer{padding:10px 18px;color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+  .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal-mask[hidden]{display:none}
+  .modal{background:#fff;border-radius:10px;padding:16px;width:min(640px,92vw);border:1px solid var(--line)}
+  .modal textarea{width:100%;min-height:160px;font-family:Consolas,monospace;font-size:12px}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+  .modal p{font-size:12.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1 class="brand">收工台</h1>
+  <label style="font-size:13px;color:var(--muted)">工作日期
+    <input type="date" id="date-input">
+  </label>
+  <span class="counts" id="counts"></span>
+  <span class="src-label" id="src-label"></span>
+  <div class="actions">
+    <button id="btn-sample">载入虚构样例</button>
+    <button id="btn-import">导入分析结果</button>
+    <button id="btn-export">导出 JSON</button>
+    <button id="btn-copy-material">复制分析材料</button>
+  </div>
+</header>
+
+<div class="ai-note">AI 的语义提取与措辞发生在豆包对话侧；本工作台不调用模型、无假 AI 按钮。</div>
+<div class="demo-banner" id="demo-banner" hidden>样例数据模式（全部为虚构测试样例，非真实工作）</div>
+<div class="notice-bar" id="notice-bar" hidden></div>
+
+<main>
+  <section class="panel">
+    <h2>① 今日先做</h2>
+    <div id="overdue-strip"></div>
+    <div id="prio-list"></div>
+    <h3>阻塞区（等别人回复 / 被依赖卡住，不冒充可直接做）</h3>
+    <div id="blocked-list"></div>
+    <h3>待确认区（缺负责人 / 缺截止 / 仅为建议，不自动补全）</h3>
+    <div id="pending-list"></div>
+  </section>
+
+  <section class="panel">
+    <h2>② 讨论落地</h2>
+    <div id="source-list"></div>
+  </section>
+
+  <section class="panel">
+    <h2>③ 收工有数</h2>
+    <div id="report-box"></div>
+  </section>
+</main>
+
+<footer>数据仅保存在本机浏览器（localStorage），可用导出 JSON 备份，不承诺跨设备同步。所有界面文本均为本地渲染，不访问网络。</footer>
+
+<div class="modal-mask" id="import-modal" hidden>
+  <div class="modal">
+    <h3 style="margin-top:0">导入豆包分析结果（JSON）</h3>
+    <p>粘贴豆包产出的结构化 JSON 文本，或选择 .json 文件。任务按 id 去重；默认保留你手动改过的状态，不被导入值覆盖。相似标题但 id 不同的事项只会给出合并建议，绝不自动删除。</p>
+    <textarea id="import-text" placeholder='{"schema_version":1,"meta":{...},"tasks":[...],"sources":[...],"priorities":[...],"blocked":[...],"pending_confirmation":[...]}'></textarea>
+    <p style="margin:8px 0">或选择本地 JSON 文件：<input type="file" id="import-file" accept=".json,application/json"></p>
+    <label style="font-size:12.5px"><input type="checkbox" id="import-overwrite"> 用导入数据里的状态覆盖本地已手动修改的状态（默认不覆盖）</label>
+    <div class="modal-actions">
+      <button id="import-cancel">取消</button>
+      <button id="import-do" class="primary">导入</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ================= 内嵌样例数据（原样内联，禁止 fetch） ================= */
+const SAMPLE_DATA = {
+  "schema_version": 1,
+  "meta": {"project_name":"收工台","reference_date":"2026-10-25","timezone":"Asia/Shanghai","generated_by":"豆包工作","is_demo":true,"data_note":"全部为虚构测试样例，非真实工作"},
+  "sources": [
+    {"source_id":"T1","type":"todo","title":"待办来源 T1","raw_text":"参考日期：2026-10-25，时区：北京时间。\n任务：整理项目演示说明，负责人是我，今天 14:40 前完成，目前进行中。\n任务：检查分享页面是否能打开，负责人是我，今天 15:10 前完成，目前待办。\n任务：修正提交介绍中的旧截图，负责人是我，今天 15:00 前完成，目前待办。\n任务：整理下一次迭代想法，没有确定截止时间，目前待办。"},
+    {"source_id":"M1","type":"meeting","title":"讨论来源 M1","raw_text":"参考日期：2026-10-25，时区：北京时间。\n我：我会在今天 14:50 前整理录屏脚本。\n同伴 A：我检查展示页面，今天 15:00 前把问题反馈给你。\n我：封面要不要改一下？先保留为建议，还没确定谁做和什么时候做。\n同伴 A：确认提交入口前，要先等我反馈页面是否能正常打开。"},
+    {"source_id":"U1","type":"update","title":"状态更新 U1（演示中在工作台手动切换状态来应用）","raw_text":"我确认：项目演示说明已完成；录屏脚本仍在进行中；分享页面检查还在等同伴 A 的反馈。"}
+  ],
+  "tasks": [
+    {"id":"T001","title":"整理项目演示说明","owner":"我","due_at":"2026-10-25 14:40","due_raw":"今天 14:40 前","status":"进行中","source_id":"T1","source_quote":"任务：整理项目演示说明，负责人是我，今天 14:40 前完成，目前进行中。","needs_confirmation":false,"note":""},
+    {"id":"T002","title":"检查分享页面是否能打开","owner":"我","due_at":"2026-10-25 15:10","due_raw":"今天 15:10 前","status":"待办","source_id":"T1","source_quote":"任务：检查分享页面是否能打开，负责人是我，今天 15:10 前完成，目前待办。","needs_confirmation":false,"note":""},
+    {"id":"T003","title":"修正提交介绍中的旧截图","owner":"我","due_at":"2026-10-25 15:00","due_raw":"今天 15:00 前","status":"待办","source_id":"T1","source_quote":"任务：修正提交介绍中的旧截图，负责人是我，今天 15:00 前完成，目前待办。","needs_confirmation":false,"note":""},
+    {"id":"T004","title":"整理下一次迭代想法","owner":"待确认","due_at":"","due_raw":"没有确定截止时间","status":"待办","source_id":"T1","source_quote":"任务：整理下一次迭代想法，没有确定截止时间，目前待办。","needs_confirmation":true,"note":"未给负责人与截止时间，不自动设为今日到期，待确认后再排期。"},
+    {"id":"T005","title":"整理录屏脚本","owner":"我","due_at":"2026-10-25 14:50","due_raw":"今天 14:50 前","status":"待办","source_id":"M1","source_quote":"我：我会在今天 14:50 前整理录屏脚本。","needs_confirmation":false,"note":""},
+    {"id":"T006","title":"检查展示页面并反馈问题","owner":"同伴 A","due_at":"2026-10-25 15:00","due_raw":"今天 15:00 前","status":"待办","source_id":"M1","source_quote":"同伴 A：我检查展示页面，今天 15:00 前把问题反馈给你。","needs_confirmation":false,"note":"他人负责的行动项，是 T002 的阻塞来源。"}
+  ],
+  "priorities": [
+    {"task_id":"T001","reason":"截止时间最早（今天 14:40），且当前已在进行中，应优先收尾。依据来源 T1。"},
+    {"task_id":"T005","reason":"截止时间 14:50，仅次于演示说明，为本人在讨论中承诺的事项。依据来源 M1。"},
+    {"task_id":"T003","reason":"截止时间 15:00，为今日须完成的明确待办，排在 14:50 事项之后。依据来源 T1。"}
+  ],
+  "blocked": [
+    {"task_id":"T002","blocked_by":"T006","reason":"需先等同伴 A 反馈展示页面能否正常打开，才能确认提交入口/分享页面。依据来源 M1：『确认提交入口前，要先等我反馈页面是否能正常打开。』故 15:10 的分享页面检查列入阻塞区，不进入今日优先卡。"}
+  ],
+  "pending_confirmation": [
+    {"title":"封面是否修改","source_id":"M1","reason":"仅为建议（『封面要不要改一下？』），原文明确『先保留为建议，还没确定谁做和什么时候做』，不补负责人、不补截止时间、不转为承诺任务。","source_quote":"我：封面要不要改一下？先保留为建议，还没确定谁做和什么时候做。"}
+  ]
+};
+
+/* ================= 全局状态 ================= */
+var STORAGE_KEY = 'shougong-desk-state-v1';
+var STATUS_ENUM = ['待办', '进行中', '已完成', '阻塞'];
+var state = null;
+var currentVersion = 0;     // 每次变更 +1，作为数据脏标记
+var reportVersion = -1;     // 日报生成时的数据版本；-1 表示尚未生成
+var reportText = '';
+var lastNotices = [];
+
+function localDateStr(){
+  var d = new Date(), p = function(n){ return String(n).padStart(2,'0'); };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
+function freshState(){
+  return {
+    schema_version: 1,
+    meta: {"project_name":"收工台","reference_date":localDateStr(),"timezone":"Asia/Shanghai","generated_by":"（未载入数据）","is_demo":false,"data_note":""},
+    reference_date: localDateStr(),
+    dataSource: '（空：请载入虚构样例，或导入豆包分析结果）',
+    isDemo: false,
+    sources: [], tasks: [], priorities: [], blocked: [], pending_confirmation: [],
+    tomorrowPlan: ''
+  };
+}
+
+/* ================= DOM 构建助手（全部 textContent，杜绝 innerHTML 注入） ================= */
+function h(tag, attrs, children){
+  var n = document.createElement(tag);
+  if (attrs){
+    Object.keys(attrs).forEach(function(k){
+      var v = attrs[k]; if (v == null) return;
+      if (k === 'class') n.className = v;
+      else if (k === 'text') n.textContent = v;
+      else if (k === 'value') n.value = v;
+      else if (k.slice(0,2) === 'on' && typeof v === 'function') n.addEventListener(k.slice(2), v);
+      else if (k === 'checked' || k === 'disabled' || k === 'hidden' || k === 'readonly') { if (v) n[k] = true; }
+      else n.setAttribute(k, v);
+    });
+  }
+  (children || []).forEach(function(c){
+    if (c == null) return;
+    n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  });
+  return n;
+}
+
+/* ================= 持久化 ================= */
+function save(){
+  currentVersion++;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({state: state, reportVersion: reportVersion, reportText: reportText}));
+  } catch(e){}
+  render();
+}
+function loadInitial(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (raw){
+      var obj = JSON.parse(raw);
+      if (obj && obj.state){
+        state = obj.state;
+        reportVersion = obj.reportVersion || -1;
+        reportText = obj.reportText || '';
+        return;
+      }
+    }
+  } catch(e){}
+  state = freshState();
+}
+
+/* ================= 载入样例 / 导入 / 导出 ================= */
+function loadSample(){
+  state = JSON.parse(JSON.stringify(SAMPLE_DATA));
+  state.tasks.forEach(function(t){ t.confirmed = true; });
+  state.isDemo = !!state.meta.is_demo;
+  state.reference_date = state.meta.reference_date || localDateStr();
+  state.dataSource = '样例数据 · 生成方：' + (state.meta.generated_by || '豆包工作');
+  state.tomorrowPlan = '';
+  reportVersion = -1; reportText = '';
+  lastNotices = ['已载入虚构样例：全部为虚构测试样例，非真实工作。'];
+  save();
+}
+
+function normTitle(s){ return String(s==null?'':s).replace(/[\s，。、！？!?:：;；「」『』"'']/g,'').toLowerCase(); }
+function similarTitle(a,b){
+  var x = normTitle(a), y = normTitle(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  return x.length >= 4 && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0);
+}
+
+function doImport(text, overwriteStatus){
+  var inc;
+  try { inc = JSON.parse(text); }
+  catch(e){ alert('JSON 解析失败：' + e.message); return; }
+  var notices = [];
+  (inc.tasks || []).forEach(function(it){
+    var ex = null;
+    for (var i=0;i<state.tasks.length;i++){ if (state.tasks[i].id === it.id){ ex = state.tasks[i]; break; } }
+    if (ex){
+      if (overwriteStatus && it.status) ex.status = it.status;
+      ['title','owner','due_at','due_raw','source_id','source_quote','needs_confirmation','note'].forEach(function(k){
+        if (k in it) ex[k] = it[k];
+      });
+    } else {
+      var sim = null;
+      state.tasks.forEach(function(t){ if (!sim && similarTitle(t.title, it.title)) sim = t; });
+      if (sim) notices.push('合并建议：导入项「' + it.title + '」（id=' + it.id + '）与本地已有「' + sim.title + '」（id=' + sim.id + '）标题高度相似但 id 不同，未自动删除，请人工核对后决定是否合并。');
+      var nt = Object.assign({confirmed:true, note:''}, it);
+      state.tasks.push(nt);
+    }
+  });
+  if (inc.sources) state.sources = inc.sources;
+  if (inc.priorities) state.priorities = inc.priorities;
+  if (inc.blocked) state.blocked = inc.blocked;
+  if (inc.pending_confirmation) state.pending_confirmation = inc.pending_confirmation;
+  if (inc.meta){
+    state.meta = inc.meta;
+    state.isDemo = !!inc.meta.is_demo;
+    state.reference_date = inc.meta.reference_date || state.reference_date;
+  }
+  state.dataSource = '导入分析结果 · 生成方：' + ((inc.meta && inc.meta.generated_by) || '未知');
+  lastNotices = notices;
+  reportVersion = -1; reportText = '';
+  save();
+}
+
+function exportJSON(){
+  var data = {
+    schema_version: state.schema_version || 1,
+    meta: state.meta,
+    reference_date: state.reference_date,
+    data_source: state.dataSource,
+    sources: state.sources,
+    tasks: state.tasks,
+    priorities: state.priorities,
+    blocked: state.blocked,
+    pending_confirmation: state.pending_confirmation,
+    tomorrow_plan: state.tomorrowPlan
+  };
+  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var a = document.createElement('a');
+  var d = new Date(), p = function(n){ return String(n).padStart(2,'0'); };
+  a.href = URL.createObjectURL(blob);
+  a.download = '收工台-数据备份-' + d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+}
+
+/* ================= 剪贴板 ================= */
+function fallbackCopy(txt, cb){
+  var ta = h('textarea', {}); ta.value = txt;
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); if (cb) cb(); } catch(e){}
+  document.body.removeChild(ta);
+}
+function copyText(txt, btn){
+  var flash = function(){ if (btn){ var old = btn.textContent; btn.textContent = '已复制'; setTimeout(function(){ btn.textContent = old; }, 1200); } };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(flash).catch(function(){ fallbackCopy(txt, flash); });
+  } else fallbackCopy(txt, flash);
+}
+function copyAnalysisMaterial(btn){
+  var L = [];
+  L.push('收工台 · 当前分析材料（交回豆包继续分析）');
+  L.push('参考日期：' + (state.reference_date||'') + '（' + (state.dataSource||'') + '）');
+  (state.sources || []).forEach(function(s){
+    L.push('');
+    L.push('=== 来源 ' + s.source_id + '：' + (s.title||'') + ' ===');
+    L.push('原文：');
+    L.push(s.raw_text || '');
+    var its = state.tasks.filter(function(t){ return t.source_id === s.source_id; });
+    if (its.length){
+      L.push('提取的行动项：');
+      its.forEach(function(t){
+        L.push('- [' + t.status + '] ' + t.title + '｜负责人：' + ownerOf(t) + '｜截止：' + (t.due_raw || t.due_at || '无明确截止') + '｜' + (t.confirmed ? '已确认加入统一清单' : '未确认（待勾选）'));
+      });
+    }
+  });
+  if (state.pending_confirmation && state.pending_confirmation.length){
+    L.push('');
+    L.push('=== 待确认建议（不是承诺任务） ===');
+    state.pending_confirmation.forEach(function(p){ L.push('- ' + p.title + '（' + (p.reason||'') + '）'); });
+  }
+  copyText(L.join('\n'), btn);
+}
+
+/* ================= 任务展示组件 ================= */
+function ownerOf(t){ return (t.owner && String(t.owner).trim()) ? t.owner : '待确认'; }
+function dueOf(t){ return t.due_raw || t.due_at || '无明确截止'; }
+
+function statusButtons(t){
+  var wrap = h('span', {class:'status-seg'});
+  STATUS_ENUM.forEach(function(s){
+    wrap.appendChild(h('button', {class: t.status===s?'on':'', text: s, onclick: function(){ t.status = s; save(); }}));
+  });
+  return wrap;
+}
+
+function srcToggle(t){
+  var box = h('div', {class:'srcbox', hidden:true});
+  if (t.source_quote) box.appendChild(h('div', {class:'quote', text:'原文片段：' + t.source_quote}));
+  var btn = h('button', {text:'来源原文', onclick: function(){ box.hidden = !box.hidden; }});
+  return h('span', {}, [btn, box]);
+}
+
+function editToggle(t){
+  var box = h('div', {class:'edit-box', hidden:true});
+  var ti = h('input', {value: t.title || ''});
+  var oi = h('input', {value: (t.owner && t.owner !== '待确认') ? t.owner : '', placeholder:'负责人（留空显示“待确认”）'});
+  var ni = h('textarea', {class:'plan', text: t.note || '', placeholder:'备注'});
+  var btn = h('button', {text:'编辑'});
+  btn.addEventListener('click', function(){
+    box.hidden = !box.hidden;
+    ti.value = t.title || ''; oi.value = (t.owner && t.owner !== '待确认') ? t.owner : ''; ni.value = t.note || '';
+  });
+  box.appendChild(h('div', {}, [h('span', {text:'标题：'}), ti]));
+  box.appendChild(h('div', {}, [h('span', {text:'负责人：'}), oi]));
+  box.appendChild(h('div', {}, [h('span', {text:'备注：'}), ni]));
+  box.appendChild(h('button', {class:'primary', text:'保存修改', onclick: function(){
+    var nt = ti.value.trim(); if (nt) t.title = nt;
+    t.owner = oi.value.trim();
+    t.note = ni.value;
+    box.hidden = true;
+    save();
+  }}));
+  return h('span', {}, [btn, box]);
+}
+
+function taskControls(t){
+  return h('div', {class:'task-ctl'}, [statusButtons(t), srcToggle(t), editToggle(t)]);
+}
+
+function confirmBox(t){
+  return h('label', {class:'confirm-lab'}, [
+    h('input', {type:'checkbox', checked: !!t.confirmed, onchange: function(){ t.confirmed = this.checked; save(); }}),
+    h('span', {text:'确认加入统一清单'})
+  ]);
+}
+
+function taskRow(t, inSource){
+  return h('div', {class:'blocked-item'}, [
+    h('div', {class:'task-head'}, [
+      h('span', {class:'task-title', text: t.title}),
+      inSource ? confirmBox(t) : null
+    ]),
+    h('div', {class:'task-meta', text: '负责人：' + ownerOf(t) + '　截止：' + dueOf(t) + (t.needs_confirmation ? '　· 待确认（缺负责人或截止）' : '')}),
+    taskControls(t)
+  ]);
+}
+
+/* ================= 渲染：顶部 ================= */
+function renderTop(){
+  var done = state.tasks.filter(function(t){ return t.status === '已完成'; }).length;
+  var undone = state.tasks.filter(function(t){ return t.confirmed && !t.needs_confirmation && t.status !== '已完成'; }).length;
+  var pend = state.tasks.filter(function(t){ return t.needs_confirmation || !t.confirmed; }).length + (state.pending_confirmation || []).length;
+  var c = document.getElementById('counts');
+  c.textContent = '';
+  c.appendChild(h('span', {text:'未完成 '})); c.appendChild(h('b', {text: String(undone)}));
+  c.appendChild(h('span', {text:'　已完成 '})); c.appendChild(h('b', {text: String(done)}));
+  c.appendChild(h('span', {text:'　待确认 '})); c.appendChild(h('b', {text: String(pend)}));
+  document.getElementById('src-label').textContent = '数据来源：' + (state.dataSource || '');
+  document.getElementById('demo-banner').hidden = !state.isDemo;
+  var nb = document.getElementById('notice-bar');
+  nb.hidden = !(lastNotices && lastNotices.length);
+  nb.textContent = '';
+  if (lastNotices && lastNotices.length) nb.appendChild(h('div', {text: lastNotices.join('　')}));
+  var di = document.getElementById('date-input');
+  if (di.value !== (state.reference_date || '')) di.value = state.reference_date || localDateStr();
+}
+
+/* ================= 渲染：今日先做 ================= */
+function inUnified(t){ return t.confirmed && !t.needs_confirmation; }
+
+function renderToday(){
+  var prioBox = document.getElementById('prio-list');
+  prioBox.textContent = '';
+  if (!state.tasks.length){
+    prioBox.appendChild(h('div', {class:'empty', text:'暂无任务。点击右上角“载入虚构样例”查看演示，或“导入分析结果”载入豆包整理好的清单。'}));
+  }
+  (state.priorities || []).slice(0, 3).forEach(function(p, i){
+    var t = null;
+    state.tasks.forEach(function(x){ if (x.id === p.task_id) t = x; });
+    if (!t || !inUnified(t)) return;
+    prioBox.appendChild(h('div', {class:'prio-card'}, [
+      h('div', {class:'prio-num', text: String(i+1)}),
+      h('div', {class:'prio-body'}, [
+        h('div', {class:'task-title', text: t.title}),
+        h('div', {class:'task-meta', text: '负责人：' + ownerOf(t) + '　截止：' + dueOf(t)}),
+        h('div', {class:'reason', text: '排序理由：' + (p.reason || '')}),
+        taskControls(t)
+      ])
+    ]));
+  });
+
+  // 逾期提示（单独提示但不隐藏原卡片）
+  var od = document.getElementById('overdue-strip');
+  od.textContent = '';
+  var now = Date.now();
+  var overdue = state.tasks.filter(function(t){
+    return inUnified(t) && t.due_at && t.status !== '已完成' &&
+      (new Date(t.due_at.replace(' ', 'T')).getTime() < now);
+  });
+  if (overdue.length){
+    od.appendChild(h('div', {class:'dirty-banner', text:'逾期提示（以本机当前时钟判断）：' +
+      overdue.map(function(t){ return t.title + '（' + dueOf(t) + '）'; }).join('；') + '。请尽快处理或调整状态。'}));
+  }
+
+  // 阻塞区
+  var bl = document.getElementById('blocked-list');
+  bl.textContent = '';
+  var blockedIds = {};
+  (state.blocked || []).forEach(function(b){ blockedIds[b.task_id] = b; });
+  var blockedTasks = state.tasks.filter(function(t){
+    return inUnified(t) && (t.status === '阻塞' || blockedIds[t.id]);
+  });
+  if (!blockedTasks.length) bl.appendChild(h('div', {class:'empty', text:'暂无被阻塞的任务。'}));
+  blockedTasks.forEach(function(t){
+    var reason = '';
+    if (blockedIds[t.id]){
+      var by = null;
+      state.tasks.forEach(function(x){ if (x.id === blockedIds[t.id].blocked_by) by = x; });
+      reason = '被 ' + blockedIds[t.id].blocked_by + (by ? '（' + by.title + '）' : '') + ' 阻塞：' + (blockedIds[t.id].reason || '');
+    } else {
+      reason = t.note ? ('被标记为阻塞（等他人回复）：' + t.note) : '被标记为阻塞（等他人回复或外部依赖）。';
+    }
+    bl.appendChild(h('div', {class:'blocked-item'}, [
+      h('div', {class:'task-title', text: t.title}),
+      h('div', {class:'task-meta', text: '负责人：' + ownerOf(t) + '　截止：' + dueOf(t)}),
+      h('div', {class:'warn-text', text: reason}),
+      taskControls(t)
+    ]));
+  });
+
+  // 待确认区
+  var pl = document.getElementById('pending-list');
+  pl.textContent = '';
+  state.tasks.filter(function(t){ return t.needs_confirmation; }).forEach(function(t){
+    pl.appendChild(h('div', {class:'pend-item'}, [
+      h('div', {class:'task-title', text: t.title}, [h('span', {class:'suggest-tag', text:'待确认'})]),
+      h('div', {class:'task-meta', text: '负责人：' + ownerOf(t) + '　截止：' + dueOf(t) + '（缺字段，不自动补全、不自动视为今日到期）'}),
+      t.note ? h('div', {class:'task-meta', text: '备注：' + t.note}) : null,
+      taskControls(t)
+    ]));
+  });
+  (state.pending_confirmation || []).forEach(function(p){
+    pl.appendChild(h('div', {class:'pend-item'}, [
+      h('div', {class:'task-title'}, [h('span', {text: p.title}), h('span', {class:'suggest-tag', text:'建议·待确认'})]),
+      h('div', {class:'task-meta', text: '来源：' + (p.source_id || '') + '（仅为讨论建议，无负责人、无截止时间，不能转为承诺任务）'}),
+      p.reason ? h('div', {class:'task-meta', text: '原因：' + p.reason}) : null,
+      p.source_quote ? h('div', {class:'quote', text: '原文片段：' + p.source_quote}) : null
+    ]));
+  });
+  var unconfirmed = state.tasks.filter(function(t){ return !t.confirmed; });
+  if (unconfirmed.length){
+    pl.appendChild(h('div', {class:'pend-item', style2:0}, [
+      h('div', {class:'task-title', text:'以下行动项尚未勾选“确认加入统一清单”，暂不进入今日视图与日报：'}),
+      h('div', {class:'task-meta', text: unconfirmed.map(function(t){ return t.title; }).join('、')})
+    ]));
+  }
+}
+
+/* ================= 渲染：讨论落地 ================= */
+function renderSources(){
+  var box = document.getElementById('source-list');
+  box.textContent = '';
+  if (!state.sources.length){
+    box.appendChild(h('div', {class:'empty', text:'暂无来源记录。'}));
+    return;
+  }
+  state.sources.forEach(function(s){
+    var rawBox = h('pre', {class:'rawtext', hidden:true, text: s.raw_text || ''});
+    var expBtn = h('button', {text:'展开原文'});
+    expBtn.addEventListener('click', function(){
+      rawBox.hidden = !rawBox.hidden;
+      expBtn.textContent = rawBox.hidden ? '展开原文' : '折叠原文';
+    });
+    var its = state.tasks.filter(function(t){ return t.source_id === s.source_id; });
+    var itemsBox = h('div', {});
+    if (its.length) its.forEach(function(t){ itemsBox.appendChild(taskRow(t, true)); });
+    else itemsBox.appendChild(h('div', {class:'task-meta', text:'（该来源暂无提取的行动项）'}));
+    box.appendChild(h('div', {class:'source'}, [
+      h('div', {class:'source-head'}, [
+        h('strong', {text: s.source_id + ' · ' + (s.title || '')}),
+        expBtn
+      ]),
+      rawBox,
+      itemsBox
+    ]));
+  });
+}
+
+/* ================= 日报 ================= */
+function fmtTask(t){ return t.title + '（负责人：' + ownerOf(t) + '；截止：' + dueOf(t) + '）'; }
+function blockReasonOf(t){
+  var b = null;
+  (state.blocked || []).forEach(function(x){ if (x.task_id === t.id) b = x; });
+  if (b) return b.reason || ('等待 ' + b.blocked_by);
+  return t.status === '阻塞' ? (t.note ? ('被标记为阻塞：' + t.note) : '被标记为阻塞（等他人回复）') : '';
+}
+
+function generateReport(){
+  var ref = state.reference_date || localDateStr();
+  var items = state.tasks.filter(inUnified);
+  var blockedIds = {};
+  (state.blocked || []).forEach(function(b){ blockedIds[b.task_id] = b; });
+  var done = items.filter(function(t){ return t.status === '已完成'; });
+  var doing = items.filter(function(t){ return t.status === '进行中'; });
+  var blk = items.filter(function(t){ return t.status === '阻塞' || blockedIds[t.id]; });
+  var blkSet = {}; blk.forEach(function(t){ blkSet[t.id] = true; });
+  var later = items.filter(function(t){ return !blkSet[t.id] && t.status !== '已完成' && t.status !== '进行中'; });
+  var L = [];
+  L.push('收工日报（' + ref + '）');
+  L.push('');
+  L.push('【今日已完成】');
+  L.push(done.length ? done.map(function(t){ return '- ' + fmtTask(t); }).join('\n') : '- 无');
+  L.push('');
+  L.push('【正在推进】');
+  L.push(doing.length ? doing.map(function(t){ return '- ' + fmtTask(t); }).join('\n') : '- 无');
+  L.push('');
+  L.push('【阻塞与需要协助】');
+  L.push(blk.length ? blk.map(function(t){ return '- ' + fmtTask(t) + '：' + blockReasonOf(t); }).join('\n') : '- 无');
+  L.push('');
+  L.push('【后续计划】');
+  var plan = (state.tomorrowPlan || '').trim();
+  if (plan){
+    L.push.apply(L, plan.split(/\n+/).filter(Boolean).map(function(x){ return '- ' + x; }));
+  } else if (later.length){
+    L.push('（待确认：你尚未填写明日计划，以下由当前待办事项生成建议，请自行确认后执行）');
+    L.push(later.map(function(t){ return '- ' + fmtTask(t); }).join('\n'));
+  } else {
+    L.push('- 无（可在上方“明日计划”框中自行填写）');
+  }
+  reportText = L.join('\n');
+  reportVersion = currentVersion + 1;
+  save();
+}
+
+function renderReport(){
+  var box = document.getElementById('report-box');
+  box.textContent = '';
+  var ta = h('textarea', {class:'plan', placeholder:'明日计划（可选）：自己输入；留空则由当前待办事项生成建议并标注“待确认”，不伪装成确定承诺。'});
+  ta.value = state.tomorrowPlan || '';
+  ta.addEventListener('input', function(){ state.tomorrowPlan = ta.value; save(); });
+  box.appendChild(h('div', {}, [h('strong', {text:'明日计划（可选）'}), ta]));
+  box.appendChild(h('div', {class:'task-ctl'}, [
+    h('button', {class:'primary', text: reportText ? '重新生成日报' : '生成日报草稿', onclick: generateReport})
+  ]));
+  if (reportText){
+    var stale = reportVersion >= 0 && currentVersion > reportVersion;
+    if (stale) box.appendChild(h('div', {class:'dirty-banner', text:'日报已过期：数据在上次生成后已变更，请点击“重新生成日报”刷新。'}));
+    box.appendChild(h('pre', {text: reportText}));
+    box.appendChild(h('div', {class:'task-ctl'}, [
+      h('button', {text:'一键复制日报', onclick: function(){ copyText(reportText, this); }})
+    ]));
+  } else {
+    box.appendChild(h('div', {class:'empty', text:'尚未生成日报。日报只依据“已确认加入清单”的任务与你实际切换的状态生成：只有状态为“已完成”的事项才会进入【今日已完成】。'}));
+  }
+}
+
+/* ================= 总渲染 ================= */
+function render(){
+  renderTop();
+  renderToday();
+  renderSources();
+  renderReport();
+}
+
+/* ================= 初始化 ================= */
+function init(){
+  loadInitial();
+
+  document.getElementById('date-input').addEventListener('change', function(){
+    state.reference_date = this.value || localDateStr();
+    save();
+  });
+  document.getElementById('btn-sample').addEventListener('click', loadSample);
+  document.getElementById('btn-export').addEventListener('click', exportJSON);
+  document.getElementById('btn-copy-material').addEventListener('click', function(){ copyAnalysisMaterial(this); });
+
+  var modal = document.getElementById('import-modal');
+  document.getElementById('btn-import').addEventListener('click', function(){ modal.hidden = false; });
+  document.getElementById('import-cancel').addEventListener('click', function(){ modal.hidden = true; });
+  document.getElementById('import-file').addEventListener('change', function(){
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function(){ document.getElementById('import-text').value = String(reader.result || ''); };
+    reader.readAsText(f, 'utf-8');
+  });
+  document.getElementById('import-do').addEventListener('click', function(){
+    var ta = document.getElementById('import-text');
+    var fi = document.getElementById('import-file');
+    var ow = document.getElementById('import-overwrite').checked;
+    var text = ta.value;
+    if (text.trim()){
+      doImport(text, ow);
+      modal.hidden = true;
+      ta.value = '';
+      return;
+    }
+    if (fi.files && fi.files[0]){
+      var reader = new FileReader();
+      reader.onload = function(){
+        doImport(String(reader.result || ''), ow);
+        modal.hidden = true;
+        fi.value = '';
+      };
+      reader.readAsText(fi.files[0], 'utf-8');
+      return;
+    }
+    alert('请先粘贴 JSON 文本或选择文件。');
+  });
+
+  render();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
